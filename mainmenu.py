@@ -63,11 +63,11 @@ def menu(stdscr: cr.window):
             selector = "> " if i == selected and animation_frame else "  "
             
             # Format level info with better spacing
-            level_name = f"{level:<20}"
-            difficulty_str = f"Difficulty: {difficulty:<2}"
+            level_name = f"{f'<{level}>':<20}"
+            difficulty_str = f"Difficulty: {min(difficulty, 999)}"
             duration_str = f"Duration: {str(duration)[:-1]}s"
             
-            level_info = f"{selector}{level_name} [{difficulty_str} | {duration_str}]"
+            level_info = f"{selector}{level_name}\t\t [{difficulty_str} | {duration_str}]"
             
             y_pos = i + 4  # Start levels list after header
             if i == selected:

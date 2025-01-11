@@ -1,3 +1,3 @@
 
 GAME_ROOT = './'
-GAME_NAME = "Game Name"
+GAME_NAME = "Wind Game"
