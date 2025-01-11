@@ -44,9 +44,16 @@ def get_string(stdscr: cr.window, height: int, width: int, line: str, time_limit
     user_input = ""
     color_pairs = []
     errors = 0
+    score = 0
+    combo = 0
     stdscr.nodelay(True)
     start_time = time.time()
     target_line = line.lower()
+
+    # Initialize more color pairs for visual effects
+    cr.init_pair(5, cr.COLOR_CYAN, cr.COLOR_BLACK)    # Combo indicator
+    cr.init_pair(6, cr.COLOR_MAGENTA, cr.COLOR_BLACK) # Score
+    cr.init_pair(7, cr.COLOR_BLUE, cr.COLOR_BLACK)    # Time critical
 
     while len(user_input) < len(target_line):
         elapsed_time = time.time() - start_time
@@ -54,23 +61,50 @@ def get_string(stdscr: cr.window, height: int, width: int, line: str, time_limit
         if remaining_time <= 0:
             break
 
-        # Display the target line with color effects
+        # Display the target line with enhanced color effects
         for idx, char in enumerate(line):
-            color = cr.color_pair(1) if idx < len(user_input) and user_input[idx] == char.lower() else cr.color_pair(3)
-            style = cr.A_BOLD if idx < len(user_input) else cr.A_DIM
+            if idx < len(user_input):
+                if user_input[idx] == char.lower():
+                    color = cr.color_pair(1)
+                    style = cr.A_BOLD
+                else:
+                    color = cr.color_pair(2)
+                    style = cr.A_BOLD
+            else:
+                color = cr.color_pair(3)
+                style = cr.A_DIM
             stdscr.addstr(height // 2, width // 2 - len(line) // 2 + idx, char, color | style)
 
-        # Highlight the current character being typed
+        # Enhanced cursor highlight with pulsing effect
         if len(user_input) < len(target_line):
-            stdscr.addstr(height // 2, width // 2 - len(line) // 2 + len(user_input), line[len(user_input)], cr.A_REVERSE)
+            pulse = int((time.time() * 4) % 2)  # Creates a pulsing effect
+            cursor_style = cr.A_REVERSE if pulse else cr.A_BOLD
+            stdscr.addstr(height // 2, width // 2 - len(line) // 2 + len(user_input),
+                         line[len(user_input)], cursor_style | cr.color_pair(5))
 
-        # Display remaining time
-        time_bar_length = max(0, int((remaining_time / time_limit) * (width - 20)))
-        stdscr.addstr(height // 2 + 2, 5, "Time left: [" + "=" * time_bar_length + " " * (width - 20 - time_bar_length) + "]", cr.color_pair(4))
+        # Improved time bar with color gradient
+        time_percentage = remaining_time / time_limit
+        bar_length = width - 20
+        filled_length = max(0, int(time_percentage * bar_length))
+        time_color = cr.color_pair(1) if time_percentage > 0.5 else \
+                    cr.color_pair(7) if time_percentage > 0.25 else cr.color_pair(2)
+        
+        time_bar = "█" * filled_length + "░" * (bar_length - filled_length)
+        stdscr.addstr(height // 2 + 2, 5, "Time: [", cr.color_pair(3))
+        stdscr.addstr(time_bar, time_color | cr.A_BOLD)
+        stdscr.addstr("]", cr.color_pair(3))
+
+        # Display score and combo
+        score_text = f"Score: {score}"
+        combo_text = f"Combo: x{combo}" if combo > 1 else ""
+        stdscr.addstr(height // 2 - 2, width // 2 - len(score_text) // 2,
+                     score_text, cr.color_pair(6) | cr.A_BOLD)
+        if combo > 1:
+            stdscr.addstr(height // 2 - 3, width // 2 - len(combo_text) // 2,
+                         combo_text, cr.color_pair(5) | cr.A_BOLD)
 
         stdscr.refresh()
 
-        # Handle user input
         try:
             key = stdscr.get_wch()
             if isinstance(key, str):
@@ -78,23 +112,26 @@ def get_string(stdscr: cr.window, height: int, width: int, line: str, time_limit
                     if user_input:
                         user_input = user_input[:-1]
                         color_pairs.pop()
+                        combo = 0
                 else:
                     user_input += key.lower()
-                    if user_input[-1] == target_line[len(user_input) - 1]:
-                        color_pairs.append(1)  # Correct input
+                    if len(user_input) <= len(target_line) and user_input[-1] == target_line[len(user_input) - 1]:
+                        color_pairs.append(1)
+                        combo += 1
+                        score += 10 * combo
                     else:
-                        color_pairs.append(2)  # Incorrect input
+                        color_pairs.append(2)
                         errors += 1
-            elif key == cr.KEY_BACKSPACE:  # Alternative handling for backspace
+                        combo = 0
+            elif key == cr.KEY_BACKSPACE:
                 if user_input:
                     user_input = user_input[:-1]
                     color_pairs.pop()
+                    combo = 0
         except cr.error:
             pass
 
-    # Count remaining untyped characters as errors
-    return errors + len(target_line) - len(user_input)
-
+    return errors
 
 
 def get_levels() -> list[str]:

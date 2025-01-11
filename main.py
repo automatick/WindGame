@@ -56,6 +56,7 @@ def run_game(stdscr: cr.window, audio_file: str, lrc_file: str, speed: float):
 def main(stdscr: cr.window):
     """Main entry point of the game."""
     level, speed = menu(stdscr)  # Get level and speed from the menu
+    height, width = stdscr.getmaxyx()
     errors = run_game(
         stdscr,
         f"{GAME_ROOT}/levels/{level}.mp3",
@@ -63,8 +64,10 @@ def main(stdscr: cr.window):
         speed
     )
     stdscr.clear()
-    stdscr.addstr(10, 10, f"Game Over! Errors: {errors}", cr.color_pair(2) | cr.A_BOLD)
-    stdscr.refresh()
+    for i in range(errors):
+        stdscr.addstr(height // 2, width // 2 - len(f"Game Over! Errors: {i}") // 2, f"Game Over! Errors: {i}", cr.color_pair(2) | cr.A_BOLD)
+        stdscr.refresh()
+        time.sleep(0.05)
     time.sleep(3)
 
 if __name__ == "__main__":
